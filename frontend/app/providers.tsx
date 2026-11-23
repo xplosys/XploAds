@@ -5,7 +5,13 @@ import { useState } from "react";
 import { Toaster } from "sonner";
 
 import { AuthProvider } from "@/features/auth/auth-provider";
+import { useTheme } from "@/features/theme/theme";
 import { ApiError } from "@/services/api-client";
+
+function ThemedToaster() {
+  const { resolved } = useTheme();
+  return <Toaster richColors position="top-right" theme={resolved} />;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -22,7 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <AuthProvider>{children}</AuthProvider>
-      <Toaster richColors position="top-right" />
+      <ThemedToaster />
     </QueryClientProvider>
   );
 }

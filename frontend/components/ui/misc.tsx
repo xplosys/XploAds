@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const badgeStyles = {
   default: "bg-secondary text-secondary-foreground",
   success: "bg-success/10 text-success",
-  warning: "bg-warning/15 text-[oklch(0.5_0.12_75)]",
+  warning: "bg-warning/15 text-warning-foreground",
   muted: "bg-muted text-muted-foreground",
   destructive: "bg-destructive/10 text-destructive",
 } as const;

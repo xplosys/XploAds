@@ -30,6 +30,9 @@ Legend: ✅ implemented and tested · 🧪 mock/dev-only · 🔜 planned (see RO
   development backend with HMAC-signed URLs. Docker Compose now runs SeaweedFS and creates the bucket.
 - **Agency UX:** client organizations show a "Back to {agency}" link; agency staff manage client brand kits with
   `via: agency` audit entries; the organization switcher already groups agency clients.
+- **Dark mode (added on request):** a single moon/sun button in the app sidebar, on sign-in pages and on the
+  landing page; follows the OS setting until clicked, then remembered per browser, applied before first paint (no
+  flash) and synced across tabs. Dark tokens in `app/globals.css`; logic in `features/theme/theme.tsx`.
 - **Frontend:** Brands list, brand workspace with Profile / Guidelines / Products & services / Assets tabs,
   drag-and-drop uploader with progress and per-file results, asset detail dialog, organization profile fields,
   "Create your brand kit" onboarding step on the dashboard.
@@ -72,7 +75,7 @@ Local-backend-only signed endpoints under `/storage/local/*`. Reference: `docs/a
 | Backend pytest against PostgreSQL 16 + Redis: Phase 1 (42) + brand (14) + assets (8) | **64 passed** |
 | Ruff lint (backend incl. migrations) | passed |
 | ESLint + TypeScript type-check + `next build` | passed |
-| Playwright E2E on the full Docker Compose stack through Nginx (Phase 1 flow + brand-kit flow: profile, guideline, logo upload to SeaweedFS, spoofed file rejected, signed image served, logo set, priced service) | **2 passed** |
+| Playwright E2E on the full Docker Compose stack through Nginx (Phase 1 flow + brand-kit flow: profile, guideline, logo upload to SeaweedFS, spoofed file rejected, signed image served, logo set, priced service + dark-mode toggle/persistence/system preference) | **3 passed** |
 | Docker Compose stack (8 services incl. storage) | all running; worker processed the storage-deletion events |
 | S3 path | presigned POST policy (key, type, size), CORS and signed GET verified against SeaweedFS; unit test against moto |
 

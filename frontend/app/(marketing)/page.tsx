@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/features/theme/theme";
 
 const FEATURES = [
   { icon: Sparkles, title: "AI Creative Studio", text: "Copy, images, carousels and short videos generated from your brief and brand kit." },
@@ -19,6 +20,7 @@ export default function LandingPage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5">
         <Logo />
         <nav className="flex items-center gap-2">
+          <ThemeToggle className="mr-2" />
           <Button asChild variant="ghost">
             <Link href="/login">Sign in</Link>
           </Button>

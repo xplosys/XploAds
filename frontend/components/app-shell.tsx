@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/input";
 import { Badge, ErrorState, Spinner } from "@/components/ui/misc";
 import { useAuth } from "@/features/auth/auth-provider";
+import { ThemeToggle } from "@/features/theme/theme";
 import { useCurrentOrg } from "@/hooks/use-org";
 import { cn } from "@/lib/utils";
 import { api, errorMessage } from "@/services/api-client";
@@ -141,6 +142,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <LogOut className="size-4" aria-hidden /> Sign out
         </button>
+        <div className="flex items-center justify-between px-3 pt-2">
+          <span className="text-xs text-muted-foreground">Theme</span>
+          <ThemeToggle />
+        </div>
         <p className="truncate px-3 pt-2 text-xs text-muted-foreground" title={user?.email}>
           {user?.full_name} · {user?.email}
         </p>
