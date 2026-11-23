@@ -1,0 +1,25 @@
+# Production/staging overrides. Requires ENVIRONMENT=production (or staging) and real secrets in .env.
+# The API refuses to start with development defaults (see Settings.assert_safe_for_environment).
+services:
+  postgres:
+    ports: []
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/proxy_params_xploads:/etc/nginx/proxy_params_xploads:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot
+  api:
+    deploy:
+      resources:
+        limits: { memory: 1g }
+  worker:
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+volumes:
+  certbot-webroot:

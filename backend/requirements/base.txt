@@ -1,0 +1,21 @@
+# Runtime dependencies (pinned; verified together on Python 3.12)
+fastapi==0.165.0
+starlette==1.10.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.4
+pydantic-settings==2.16.3
+email-validator==2.4.0
+sqlalchemy[asyncio]==2.1.9
+asyncpg==0.32.0
+alembic==1.20.1
+psycopg[binary]==3.3.9
+argon2-cffi==25.1.0
+pyjwt==2.15.1
+pyotp==2.12.1
+cryptography==50.0.2
+redis==8.1.0
+celery==5.7.0
+structlog==26.1.0
+sentry-sdk==2.75.0
+# kombu's redis transport imports packaging without declaring it
+packaging==26.3
