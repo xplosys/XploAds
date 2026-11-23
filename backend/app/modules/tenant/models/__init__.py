@@ -28,6 +28,10 @@ class Tenant(TimestampMixin, Base):
     country_code: Mapped[str | None] = mapped_column(String(2))
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     default_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    description: Mapped[str | None] = mapped_column(Text)
+    contact_email: Mapped[str | None] = mapped_column(String(320))
+    contact_phone: Mapped[str | None] = mapped_column(String(40))
+    address: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

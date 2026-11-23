@@ -37,6 +37,10 @@ class OrganizationUpdate(APIModel):
     country_code: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
     timezone: str | None = Field(default=None, max_length=64)
     default_currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    description: str | None = Field(default=None, max_length=2000)
+    contact_email: EmailStr | None = None
+    contact_phone: str | None = Field(default=None, max_length=40, pattern=r"^[0-9+()\-. ]{5,40}$")
+    address: str | None = Field(default=None, max_length=1000)
 
 
 class OrganizationOut(APIModel):
@@ -51,6 +55,10 @@ class OrganizationOut(APIModel):
     country_code: str | None
     timezone: str
     default_currency: str
+    description: str | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    address: str | None = None
     created_at: datetime
 
 

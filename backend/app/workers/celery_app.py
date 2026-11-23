@@ -31,7 +31,11 @@ celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     timezone="UTC",
-    beat_schedule={"outbox-relay": {"task": "outbox.relay", "schedule": 5.0, "options": {"queue": "notifications"}}},
+    beat_schedule={
+        "outbox-relay": {"task": "outbox.relay", "schedule": 5.0, "options": {"queue": "notifications"}},
+        "asset-upload-cleanup": {"task": "brand.cleanup_stale_uploads", "schedule": 3600.0,
+                                 "options": {"queue": "default"}},
+    },
 )
 
 
@@ -47,6 +51,22 @@ def outbox_relay() -> int:
         engine = create_async_engine(settings.database_url, poolclass=NullPool)
         try:
             return await relay_batch(async_sessionmaker(engine, expire_on_commit=False))
+        finally:
+            await engine.dispose()
+
+    return _run(_go())
+
+
+@celery_app.task(name="brand.cleanup_stale_uploads", ignore_result=True)
+def cleanup_stale_uploads() -> int:
+    """Reject asset uploads that were started but never completed, and delete any partial objects."""
+    from app.modules.brand.services.assets import cleanup_stale_uploads as run
+
+    async def _go() -> int:
+        engine = create_async_engine(settings.database_url, poolclass=NullPool)
+        try:
+            async with async_sessionmaker(engine, expire_on_commit=False)() as session, session.begin():
+                return await run(session)
         finally:
             await engine.dispose()
 

@@ -11,6 +11,10 @@ open http://localhost:8080    # Nginx → web + api
 docker compose logs -f worker # emails (verification, reset, invitations) are printed here in console mode
 ```
 
+Brand assets are stored in the bundled SeaweedFS container (S3-compatible). The browser uploads to and downloads
+from it through signed URLs on `http://localhost:8333`, so keep that port free (or change `STORAGE_PORT` and
+`S3_PUBLIC_ENDPOINT_URL` together). The `migrate` service creates the bucket.
+
 ### Option B — run API and web on the host (fast reload)
 
 Prerequisites: Python 3.12, Node 22, PostgreSQL 16, Redis 7.
@@ -35,6 +39,7 @@ npm run dev                                         # http://localhost:3000 (pro
 ```
 
 The backend defaults (`app/core/config.py`) match these role passwords, so no `.env` is needed for Option B.
+Uploaded assets go to `backend/var/storage` (`STORAGE_BACKEND=local`), served through signed API URLs.
 Without a worker, deliver queued emails once with `python -m app.cli relay-outbox`.
 
 ### Tests
@@ -55,6 +60,12 @@ cd frontend && E2E_BASE_URL=http://localhost:8080 npx playwright test   # agains
    `DATA_ENCRYPTION_KEY` (generate per the comments; store a copy in your password manager — losing it makes MFA
    secrets and future integration credentials unreadable), `COOKIE_SECURE=true`, `EMAIL_MODE=smtp` + SMTP settings,
    `FRONTEND_URL=https://app.example.com`, `CORS_ORIGINS=https://app.example.com`, `SENTRY_DSN`. `chmod 600 .env`.
+   **Object storage:** use Cloudflare R2 or AWS S3 rather than the bundled SeaweedFS (or put SeaweedFS behind TLS on
+   its own subdomain). Create a private bucket and an access key limited to it, then set `S3_ENDPOINT_URL` and
+   `S3_PUBLIC_ENDPOINT_URL` (R2: `https://<account>.r2.cloudflarestorage.com`), `S3_REGION` (`auto` for R2),
+   `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `STORAGE_BUCKET`. Add a bucket CORS rule allowing `POST` and `GET`
+   from the app origin with any header. When using R2/S3, remove the `storage` service (and its dependency in
+   `migrate`) from your compose override.
 5. **DNS:** A/AAAA record for the app domain to the VPS.
 6. **TLS:** obtain certificates with certbot (webroot `/var/www/certbot` is served by Nginx), then add a `listen 443 ssl`
    server block to `infrastructure/nginx/nginx.conf` using `/etc/letsencrypt/live/<domain>/`, redirect 80 → 443, and
@@ -83,6 +94,8 @@ cd frontend && E2E_BASE_URL=http://localhost:8080 npx playwright test   # agains
 - Restore drill monthly: `pg_restore -U postgres -d xploads_restore /backups/<file>.dump`, run the test suite's
   isolation checks against it.
 - Keep `DATA_ENCRYPTION_KEY` backed up separately from database backups.
+- Object storage: enable versioning or replication on the R2/S3 bucket; with the bundled SeaweedFS, back up the
+  `storagedata` volume alongside the database dump (asset rows and objects must be restored together).
 
 ## 5. Logging and monitoring
 

@@ -34,6 +34,16 @@ development only; staging/production refuse to boot with insecure defaults.
 | `RATE_LIMIT_ENABLED` | `true` | Disable only in tests. |
 | `MAX_REQUEST_BODY_BYTES` | `1048576` | API request body limit. |
 | `SENTRY_DSN` | unset | Enables Sentry. |
+| `STORAGE_BACKEND` | `local` | `s3` (AWS S3, Cloudflare R2, SeaweedFS, MinIO) or `local` (files on disk; dev/tests only, refused in prod). Docker Compose sets `s3`. |
+| `STORAGE_BUCKET` | `xploads-assets` | Private bucket for brand assets. `python -m app.cli ensure-storage` creates it. |
+| `STORAGE_LOCAL_PATH` | `./var/storage` | Folder for the local backend. |
+| `S3_ENDPOINT_URL` | unset (AWS) | S3 API endpoint the API uses. Compose: `http://storage:8333`. R2: `https://<account>.r2.cloudflarestorage.com`. |
+| `S3_PUBLIC_ENDPOINT_URL` | = `S3_ENDPOINT_URL` | Endpoint written into signed URLs the browser uses. Compose: `http://localhost:8333`. |
+| `S3_REGION` | `us-east-1` | Region (`auto` for R2). |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | — | Storage credentials. In Compose they also create the SeaweedFS identity. **Required in prod.** |
+| `S3_FORCE_PATH_STYLE` | `true` | Path-style addressing (needed for SeaweedFS/MinIO; fine for R2). |
+| `STORAGE_UPLOAD_URL_TTL_SECONDS` / `STORAGE_DOWNLOAD_URL_TTL_SECONDS` | `900` / `300` | Lifetime of signed upload forms and download links. |
+| `API_PUBLIC_URL` | empty | Base URL for the local backend's signed URLs; empty means same origin. |
 
 Docker Compose only:
 
@@ -42,6 +52,7 @@ Docker Compose only:
 | `POSTGRES_DB`, `POSTGRES_SUPERUSER`, `POSTGRES_SUPERUSER_PASSWORD` | Postgres container bootstrap. |
 | `XPLOADS_OWNER_PASSWORD`, `XPLOADS_APP_PASSWORD` | Passwords for the owner and runtime roles (created by `infrastructure/docker/postgres/01-roles.sh`). |
 | `HTTP_PORT` | Host port for Nginx (default 8080). |
+| `STORAGE_PORT` | Host port for the SeaweedFS S3 endpoint (default 8333); must match `S3_PUBLIC_ENDPOINT_URL`. |
 
 Frontend:
 

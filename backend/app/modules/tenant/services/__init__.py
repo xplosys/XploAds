@@ -41,7 +41,16 @@ def _unique_slug(name: str) -> str:
 
 
 def _clean(data: dict[str, Any]) -> dict[str, Any]:
-    return {k: (str(v) if k == "website" and v is not None else v) for k, v in data.items()}
+    out: dict[str, Any] = {}
+    for k, v in data.items():
+        if k == "website" and v is not None:
+            v = str(v)
+        elif k == "contact_email" and v is not None:
+            v = str(v).lower()
+        elif isinstance(v, str) and k in ("description", "contact_phone", "address", "industry"):
+            v = v or None
+        out[k] = v
+    return out
 
 
 class TenantService:
@@ -139,7 +148,8 @@ class TenantService:
 
     async def update_organization(self, ctx: TenantContext, data: dict[str, Any]) -> Tenant:
         ctx.require("organization.update")
-        changes = {k: v for k, v in _clean(data).items()}
+        required = {"name", "timezone", "default_currency"}
+        changes = {k: v for k, v in _clean(data).items() if not (k in required and v is None)}
         for k, v in changes.items():
             setattr(ctx.tenant, k, v)
         await self._audit(ctx, ctx.user.id, "organization.updated", "tenant", ctx.tenant_id,

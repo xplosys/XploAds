@@ -40,6 +40,10 @@ export interface Organization {
   country_code: string | null;
   timezone: string;
   default_currency: string;
+  description?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  address?: string | null;
   created_at: string;
 }
 
@@ -129,3 +133,97 @@ export interface SessionInfo {
   expires_at: string;
   current: boolean;
 }
+
+// --- brand kit (Phase 2) ------------------------------------------------------------------------------------
+
+export type ColorUsage = "primary" | "secondary" | "accent" | "neutral" | "background" | "text";
+export interface BrandColor { name: string; hex: string; usage: ColorUsage }
+export interface BrandFont { family: string; usage: "heading" | "body" | "accent"; weight?: string | null }
+export const SOCIAL_PLATFORMS = ["facebook", "instagram", "linkedin", "x", "youtube", "tiktok", "whatsapp", "website"] as const;
+export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
+
+export interface BrandSummary {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string | null;
+  industry: string | null;
+  status: "active" | "archived";
+  is_default: boolean;
+  logo_asset_id: string | null;
+  logo_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Brand extends BrandSummary {
+  description: string | null;
+  website: string | null;
+  tone_of_voice: string | null;
+  target_audience: string | null;
+  value_propositions: string[];
+  colors: BrandColor[];
+  fonts: BrandFont[];
+  social_links: Partial<Record<SocialPlatform, string>>;
+  counts: { guidelines?: number; products?: number; assets?: number };
+}
+
+export const GUIDELINE_CATEGORIES = ["voice", "visual", "messaging", "do", "dont", "legal", "other"] as const;
+export type GuidelineCategory = (typeof GUIDELINE_CATEGORIES)[number];
+export interface Guideline {
+  id: string;
+  brand_id: string;
+  category: GuidelineCategory;
+  title: string;
+  content: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Product {
+  id: string;
+  brand_id: string;
+  kind: "product" | "service";
+  name: string;
+  description: string | null;
+  sku: string | null;
+  price: string | null;
+  currency: string | null;
+  price_unit: string | null;
+  url: string | null;
+  features: string[];
+  image_asset_id: string | null;
+  image_url: string | null;
+  status: "active" | "archived";
+  created_at: string;
+  updated_at: string;
+}
+
+export type AssetKind = "logo" | "image" | "video" | "document" | "font";
+export type RightsSource = "owned" | "licensed" | "stock" | "user_generated" | "ai_generated";
+export interface Asset {
+  id: string;
+  brand_id: string;
+  kind: AssetKind;
+  status: "pending" | "ready" | "rejected";
+  original_filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  checksum_sha256: string | null;
+  width: number | null;
+  height: number | null;
+  title: string | null;
+  alt_text: string | null;
+  tags: string[];
+  rights_source: RightsSource;
+  rights_notes: string | null;
+  rights_expires_at: string | null;
+  rejection_reason: string | null;
+  url: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface AssetRule { kind: AssetKind; mime_types: string[]; extensions: string[]; max_bytes: number }
+export interface UploadTarget { url: string; method: string; fields: Record<string, string>; expires_in: number }

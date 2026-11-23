@@ -3,6 +3,7 @@
     python -m app.cli make-platform-admin user@example.com
     python -m app.cli relay-outbox          # deliver pending outbox events once (useful without Celery beat)
     python -m app.cli sync-permissions      # re-apply the permission catalog (runs as the owner role)
+    python -m app.cli ensure-storage        # create the asset bucket (S3 backend) or folder (local backend)
 """
 
 from __future__ import annotations
@@ -39,6 +40,28 @@ def _sync() -> None:
     print("permission catalog synchronized")  # noqa: T201
 
 
+def _ensure_storage() -> None:
+    import time
+    from pathlib import Path
+
+    from app.shared.storage import LocalStorage, S3Storage, get_storage
+
+    storage = get_storage()
+    if isinstance(storage, S3Storage):
+        for attempt in range(30):  # the storage container may still be starting
+            try:
+                storage.ensure_bucket()
+                break
+            except Exception:  # noqa: BLE001
+                if attempt == 29:
+                    raise
+                time.sleep(2)
+        print(f"bucket {storage.bucket} ready")  # noqa: T201
+    elif isinstance(storage, LocalStorage):
+        Path(storage.root).mkdir(parents=True, exist_ok=True)
+        print(f"local storage at {storage.root}")  # noqa: T201
+
+
 def main() -> None:
     cmd, *args = sys.argv[1:] or ["help"]
     if cmd == "make-platform-admin" and args:
@@ -47,6 +70,8 @@ def main() -> None:
         asyncio.run(_relay())
     elif cmd == "sync-permissions":
         _sync()
+    elif cmd == "ensure-storage":
+        _ensure_storage()
     else:
         print(__doc__)  # noqa: T201
 

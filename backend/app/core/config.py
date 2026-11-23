@@ -58,6 +58,23 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_starttls: bool = True
 
+    # Object storage. "local" stores files on disk behind HMAC-signed API URLs (development and tests);
+    # "s3" talks to any S3-compatible service (AWS S3, Cloudflare R2, SeaweedFS, MinIO).
+    storage_backend: Literal["local", "s3"] = "local"
+    storage_bucket: str = "xploads-assets"
+    storage_local_path: str = "./var/storage"
+    s3_endpoint_url: str | None = None
+    # Endpoint the browser uses for signed URLs when it differs from the one the API uses (e.g. SeaweedFS in Docker).
+    s3_public_endpoint_url: str | None = None
+    s3_region: str = "us-east-1"
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: str | None = None
+    s3_force_path_style: bool = True
+    storage_upload_url_ttl_seconds: int = 900
+    storage_download_url_ttl_seconds: int = 300
+    # Base URL for the local backend's signed URLs. Empty = same origin as the web app (relative /api/v1/...).
+    api_public_url: str = ""
+
     rate_limit_enabled: bool = True
     max_request_body_bytes: int = 1_048_576
 
@@ -97,6 +114,10 @@ class Settings(BaseSettings):
             problems.append("COOKIE_SECURE must be true")
         if self.email_mode == "console":
             problems.append("EMAIL_MODE=console is not allowed")
+        if self.storage_backend == "local":
+            problems.append("STORAGE_BACKEND=local is not allowed; use s3 (AWS S3, Cloudflare R2, SeaweedFS)")
+        if "change-me" in (self.s3_secret_access_key or ""):
+            problems.append("S3_SECRET_ACCESS_KEY uses the example value")
         if problems:
             raise RuntimeError("Unsafe configuration: " + "; ".join(problems))
 

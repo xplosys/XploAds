@@ -5,8 +5,9 @@ campaigns, generate on-brand creatives, publish through the Meta Marketing API a
 leads and WhatsApp enquiries into a CRM, and optimize — while staying in control of every publish and every spend
 decision.
 
-> **Status:** Phase 1 (Foundation) is complete: accounts, MFA, organizations, agency clients, workspaces, team
-> invitations, RBAC, audit log, tenant isolation with PostgreSQL RLS, async outbox, Docker stack.
+> **Status:** Phases 1 (Foundation) and 2 (Business & Brand) are complete: accounts, MFA, organizations, agency
+> clients, workspaces, team invitations, RBAC, audit log, tenant isolation with PostgreSQL RLS, async outbox, brand
+> kits (profiles, guidelines, products and services) and a verified asset library on S3-compatible storage.
 > See [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) and the [roadmap](docs/architecture/ROADMAP.md).
 
 ## Quick start
@@ -17,6 +18,9 @@ docker compose up -d --build
 # open http://localhost:8080  — emails (verification links etc.) appear in: docker compose logs -f worker
 ```
 
+There are no built-in accounts: register in the UI and open the verification link from the worker log. Uploaded
+brand assets use signed URLs on port 8333 (the bundled SeaweedFS storage service), so keep that port free.
+
 Running services on the host, tests and VPS deployment: [`docs/deployment/DEPLOYMENT.md`](docs/deployment/DEPLOYMENT.md).
 
 ## Stack
@@ -26,7 +30,7 @@ Running services on the host, tests and VPS deployment: [`docs/deployment/DEPLOY
 | Web | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui-style components, TanStack Query, React Hook Form + Zod |
 | API | Python 3.12, FastAPI, Pydantic 2, SQLAlchemy 2 (async), Alembic |
 | Jobs | Celery 5 on Redis 7, transactional outbox |
-| Data | PostgreSQL 16 with Row-Level Security (pgvector later), S3/R2 object storage (Phase 2) |
+| Data | PostgreSQL 16 with Row-Level Security (pgvector later), S3-compatible object storage (R2 / S3; SeaweedFS locally) |
 | Ops | Docker Compose, Nginx, structured JSON logs, Sentry; Prometheus/Grafana in Phase 9 |
 | Quality | pytest (real Postgres), Playwright, Ruff, ESLint, GitHub Actions |
 

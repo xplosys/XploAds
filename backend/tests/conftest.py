@@ -8,6 +8,7 @@ Environment (defaults suit the docker-compose stack and CI):
 from __future__ import annotations
 
 import os
+import tempfile
 import uuid
 
 import psycopg
@@ -27,6 +28,9 @@ os.environ.update({
     "EMAIL_MODE": "console",
     "JWT_SECRET": "test-secret-test-secret-test-secret-1234",
     "FRONTEND_URL": "http://app.test",
+    "STORAGE_BACKEND": "local",
+    "STORAGE_LOCAL_PATH": os.path.join(tempfile.gettempdir(), f"xploads-test-storage-{os.getpid()}"),
+    "API_PUBLIC_URL": "",
 })
 
 OWNER_DSN = f"postgresql://xploads_owner:xploads_owner@{PG_HOST}:{PG_PORT}/{TEST_DB}"
@@ -64,7 +68,9 @@ def database() -> None:
 
 # Ordered deletes (not TRUNCATE ... CASCADE, which would also wipe the seeded system roles).
 CLEANUP = [
-    "DELETE FROM outbox_events", "DELETE FROM audit_logs", "DELETE FROM invitations", "DELETE FROM user_roles",
+    "DELETE FROM outbox_events", "DELETE FROM audit_logs", "UPDATE brand_profiles SET logo_asset_id = NULL",
+    "DELETE FROM products", "DELETE FROM brand_guidelines", "DELETE FROM brand_assets", "DELETE FROM brand_profiles",
+    "DELETE FROM invitations", "DELETE FROM user_roles",
     "DELETE FROM tenant_users", "DELETE FROM workspaces", "DELETE FROM role_permissions WHERE tenant_id IS NOT NULL",
     "DELETE FROM roles WHERE tenant_id IS NOT NULL", "DELETE FROM tenants WHERE parent_tenant_id IS NOT NULL",
     "DELETE FROM tenants", "DELETE FROM mfa_recovery_codes", "DELETE FROM auth_tokens", "DELETE FROM sessions",

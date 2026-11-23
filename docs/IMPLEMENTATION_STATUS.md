@@ -5,8 +5,115 @@ Legend: ✅ implemented and tested · 🧪 mock/dev-only · 🔜 planned (see RO
 | Phase | Status |
 |---|---|
 | 1 Foundation | ✅ Complete (milestones M1.1–M1.7 below) |
-| 2 Business & Brand | 🔜 Next |
-| 3–9 | 🔜 Planned |
+| 2 Business & Brand | ✅ Complete (milestones M2.1–M2.5 below) |
+| 3 AI Infrastructure | 🔜 Next |
+| 4–9 | 🔜 Planned |
+
+---
+
+## Milestone: Phase 2 — Business & Brand (2026-11-23)
+
+### 1. What has been implemented
+
+- **Organization profile:** description, contact email, contact phone and address on top of the Phase 1 settings.
+- **Brand profiles:** several brands per organization with one default; tagline, description, industry, website,
+  tone of voice, target audience, value propositions, colour palette (hex + usage), fonts, social links, logo;
+  archive, make default, delete.
+- **Brand guidelines:** categorised rules (voice, visual, messaging, do, don't, legal, other) with ordering.
+- **Products & services:** kind, SKU (unique per brand), NUMERIC price with currency and unit, product URL,
+  benefits list, image, archive; search and filters with pagination.
+- **Asset library:** logos, images, videos, documents (PDF) and fonts. Direct-to-storage uploads with signed
+  policies; server-side verification by magic bytes, size and full image decode (dimensions, SHA-256); rejected
+  files are deleted; usage-rights metadata (source, notes, expiry), title, alt text and tags; signed downloads;
+  hourly cleanup of abandoned uploads.
+- **Object storage:** provider-neutral S3 adapter (Cloudflare R2, AWS S3, SeaweedFS, MinIO) plus a local
+  development backend with HMAC-signed URLs. Docker Compose now runs SeaweedFS and creates the bucket.
+- **Agency UX:** client organizations show a "Back to {agency}" link; agency staff manage client brand kits with
+  `via: agency` audit entries; the organization switcher already groups agency clients.
+- **Frontend:** Brands list, brand workspace with Profile / Guidelines / Products & services / Assets tabs,
+  drag-and-drop uploader with progress and per-file results, asset detail dialog, organization profile fields,
+  "Create your brand kit" onboarding step on the dashboard.
+
+### 2. Files created or modified
+
+- Backend new: `app/modules/brand/{models,schemas,services/__init__.py,services/assets.py,services/rules.py,api/routes.py}`,
+  `app/shared/{storage.py,storage_routes.py,files.py}`, `alembic/versions/0002_business_brand.py`,
+  `tests/{test_brand.py,test_assets.py}`.
+- Backend modified: `app/core/config.py` (storage settings, production guard), `app/main.py` (routers, upload body
+  limit), `app/cli.py` (`ensure-storage`), `app/workers/{handlers.py,celery_app.py}` (object deletion, cleanup job),
+  `app/modules/tenant/{models,schemas,services}` (organization profile fields), `tests/conftest.py`,
+  `requirements/{base,dev}.txt` (boto3, python-multipart, Pillow, moto).
+- Frontend new: `app/app/[orgId]/brands/**` (list, layout, profile, guidelines, products, assets),
+  `features/brands/{api.ts,components.tsx}`, `e2e/brand.spec.ts`, `e2e/fixtures/*`.
+- Frontend modified: `components/app-shell.tsx`, `app/app/[orgId]/{page,settings/page}.tsx`, `types/api.ts`.
+- Platform/docs: `docker-compose.yml` (storage service, migrate creates the bucket), `.env.example`, `README.md`,
+  `docs/{api/API.md,database/SCHEMA.md,security/SECURITY.md,deployment/*,architecture/{ROADMAP,RISKS_AND_DECISIONS}.md}`,
+  `backend/app/modules/brand/README.md`.
+
+### 3. Database changes
+
+Migration `0002_business_brand` (reversible): adds `tenants.{description,contact_email,contact_phone,address}`;
+creates `brand_profiles`, `brand_guidelines`, `products`, `brand_assets` with RLS ENABLE + FORCE, tenant
+isolation policies, `updated_at` triggers, composite `(tenant_id, …)` foreign keys, partial unique indexes (slug,
+single default brand, SKU), CHECK constraints (status, kind, rights, JSON shapes, non-negative price, storage key
+under the tenant prefix) and the `stale_pending_assets()` security-definer function for the cleanup job. Upgrade,
+downgrade and re-upgrade verified.
+
+### 4. APIs created
+
+23 endpoints: brands (6), guidelines (4), products (5), assets (8, incl. `/assets/rules`, `/assets/uploads`,
+`/assets/{id}/complete`, `/assets/{id}/download`); `PATCH /organizations/{id}` accepts the new profile fields.
+Local-backend-only signed endpoints under `/storage/local/*`. Reference: `docs/api/API.md`.
+
+### 5. Tests executed and results
+
+| Suite | Result |
+|---|---|
+| Backend pytest against PostgreSQL 16 + Redis: Phase 1 (42) + brand (14) + assets (8) | **64 passed** |
+| Ruff lint (backend incl. migrations) | passed |
+| ESLint + TypeScript type-check + `next build` | passed |
+| Playwright E2E on the full Docker Compose stack through Nginx (Phase 1 flow + brand-kit flow: profile, guideline, logo upload to SeaweedFS, spoofed file rejected, signed image served, logo set, priced service) | **2 passed** |
+| Docker Compose stack (8 services incl. storage) | all running; worker processed the storage-deletion events |
+| S3 path | presigned POST policy (key, type, size), CORS and signed GET verified against SeaweedFS; unit test against moto |
+
+New coverage: CRUD and validation, default/archive rules, SKU conflicts, literal search, permissions for viewer,
+member, manager, sales and billing admin, foreign-tenant access through header and through own tenant (404), RLS
+on all new tables, composite FK blocks cross-tenant links even as owner, agency audit trail, tampered/expired upload
+policies and download links, wrong content type, oversize and empty files, spoofed and truncated images, stale
+upload cleanup, worker refuses to delete outside the tenant prefix.
+
+### 6. Security considerations
+
+See `docs/security/SECURITY.md` §4a. Signed, expiring upload policies pin key, type and size; keys are server
+generated under the tenant prefix (enforced by a CHECK); content is verified by magic bytes and full image decode;
+SVG refused; private bucket with 5-minute signed downloads; per-tenant pending-upload cap and per-user upload rate
+limit; production refuses `STORAGE_BACKEND=local` and the example storage secret.
+
+### 7. Configuration required
+
+- Local Docker: nothing new beyond `.env` (new keys are in `.env.example`); port **8333** must be free for
+  signed upload/download URLs. Existing `.env` files need the new `S3_*` / `STORAGE_*` lines from `.env.example`.
+- Production: a private R2 or S3 bucket, a scoped access key, bucket CORS for the app origin, and the `S3_*`
+  variables (`docs/deployment/DEPLOYMENT.md`). ⚠️ Decision D11.
+
+### 8. Known limitations
+
+- No malware scanning for PDFs and videos yet (decision D12); videos are type-checked but not probed (FFmpeg arrives
+  in Phase 4).
+- Workspace-scoped permissions are still stored but not enforced; brands are organization-wide. Enforcement moves to
+  Phases 4–5 when creatives and campaigns belong to workspaces.
+- No image thumbnails/resizing; the library shows originals through signed URLs.
+- The bundled SeaweedFS is meant for local use; production should use R2/S3 or SeaweedFS behind TLS.
+- Asset upload verification runs inside the request (fine up to the 20–25 MB image/document limits); large-scale
+  use should move it to a worker.
+- Docker images in the sandbox were again built with an injected proxy CA; the committed Dockerfiles are unchanged.
+
+### 9. Next milestone
+
+**Phase 3 — AI Infrastructure:** provider registry and models, versioned pricing, envelope-encrypted credentials
+(platform and BYOK), tenant provider configuration, the AI Gateway (reservation → execution → settlement), usage
+events and costs, wallet and double-entry ledger skeleton, budgets and concurrency limits. Needs test API keys for
+Gemini / OpenAI / DeepSeek (or mock mode first) and decisions D2 (currency/tax) and D4 (allowances).
 
 ---
 

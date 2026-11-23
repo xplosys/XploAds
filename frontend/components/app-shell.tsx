@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, FolderKanban, LayoutDashboard, LogOut, Menu, Network, ScrollText, Settings, Shield, Users, X } from "lucide-react";
+import { ArrowLeft, Building2, FolderKanban, LayoutDashboard, LogOut, Menu, Network, Palette, ScrollText, Settings, Shield, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -68,6 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const base = `/app/${orgId}`;
   const nav = [
     { href: base, label: "Dashboard", icon: LayoutDashboard, show: true },
+    { href: `${base}/brands`, label: "Brands", icon: Palette, show: can("brands.read") },
     { href: `${base}/workspaces`, label: "Workspaces", icon: FolderKanban, show: can("workspaces.read") },
     { href: `${base}/members`, label: "Team", icon: Users, show: can("members.read") },
     { href: `${base}/clients`, label: "Clients", icon: Network, show: org.tenant_type === "agency" && can("agency.clients.access") },
@@ -76,6 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ].filter((n) => n.show);
 
   const members = orgs.data!.filter((o) => o.access === "member");
+  const parentAgency = org.parent_tenant_id ? orgs.data!.find((o) => o.id === org.parent_tenant_id) : undefined;
   const clients = orgs.data!.filter((o) => o.access === "agency");
 
   const sidebar = (
@@ -166,6 +168,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {org.tenant_type}
           </Badge>
           {org.access === "agency" && <Badge>Agency access</Badge>}
+          {parentAgency && (
+            <Link
+              href={`/app/${parentAgency.id}/clients`}
+              className="ml-auto inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" aria-hidden /> Back to {parentAgency.name}
+            </Link>
+          )}
         </header>
         <VerifyBanner />
         <main className="mx-auto max-w-6xl px-4 py-8 lg:px-8">{children}</main>

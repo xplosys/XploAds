@@ -31,7 +31,7 @@ flowchart LR
 | **8 Analytics & Automation** | Campaign/business/AI-usage/agency dashboards, workflow engine (triggers, schedules, steps, run logs), optimization recommendations (proposal-only) | 5, 6 | Dashboards from synced insights with attribution caveats; workflows run with logs; recommendations require approval. | — |
 | **9 Admin & Hardening** | Super-admin portal, feature flags, job/error monitoring, Prometheus/Grafana, load tests, security tests, backup/restore drills, production deploy runbook | all | Production readiness review passed. | Domain, TLS, VPS, Sentry |
 
-## Phase 1 milestones (this delivery)
+## Phase 1 milestones (delivered 2026-11-22)
 
 1. **M1.1 Docs & scaffolding** — architecture, roadmap, schema, risks; repo layout; Docker Compose; env examples.
 2. **M1.2 Database foundation** — owner/app roles, Alembic baseline, identity + tenancy tables, RLS policies, seeds for permissions and system roles.
@@ -40,3 +40,19 @@ flowchart LR
 5. **M1.5 Async foundation** — Celery app, queues, transactional outbox relay, email notification task.
 6. **M1.6 Frontend shell** — Next.js app with auth pages, org switcher, organizations, members & invitations, security settings.
 7. **M1.7 Verification** — pytest suite incl. cross-tenant isolation against real PostgreSQL; frontend type-check, lint and build.
+
+## Phase 2 milestones (delivered 2026-11-23)
+
+1. **M2.1 Schema** — migration `0002_business_brand`: organization profile fields, brand profiles, guidelines,
+   products/services, brand assets; RLS; composite tenant foreign keys.
+2. **M2.2 Object storage** — provider-neutral S3 adapter (R2, S3, SeaweedFS, MinIO) and a local backend; signed
+   upload policies and download URLs; SeaweedFS in Docker Compose.
+3. **M2.3 Brand API** — brands (default, archive, delete), guidelines, products & services, asset upload with
+   server-side verification, metadata and rights, signed downloads, stale-upload cleanup job.
+4. **M2.4 Frontend** — brand list, profile editor (voice, audience, value propositions, colours, fonts, socials,
+   logo), guidelines, products & services, asset library with drag-and-drop upload; organization profile settings;
+   "back to agency" navigation in client organizations.
+5. **M2.5 Verification** — API, permission, isolation and storage tests; Playwright brand-kit flow on the full stack.
+
+Carried forward: workspace-scoped permissions (assignments are stored; enforcement moves to Phase 4/5 when
+creatives and campaigns can belong to a workspace), malware scanning (D12).

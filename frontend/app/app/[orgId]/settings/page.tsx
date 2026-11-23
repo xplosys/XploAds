@@ -9,7 +9,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FormError } from "@/components/ui/form";
-import { Input, NativeSelect } from "@/components/ui/input";
+import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/misc";
 import { useUpdateOrganization } from "@/features/organizations/api";
 import { useCurrentOrg } from "@/hooks/use-org";
@@ -22,6 +22,10 @@ const schema = z.object({
   country_code: z.union([z.string().regex(/^[A-Z]{2}$/, "Use a 2-letter code"), z.literal("")]),
   timezone: z.string().min(1).max(64),
   default_currency: z.string().regex(/^[A-Z]{3}$/),
+  description: z.string().max(2000),
+  contact_email: z.union([z.email("Enter a valid email"), z.literal("")]),
+  contact_phone: z.union([z.string().regex(/^[0-9+()\-. ]{5,40}$/, "Use digits, spaces and + ( ) - ."), z.literal("")]),
+  address: z.string().max(1000),
 });
 
 export default function OrgSettingsPage() {
@@ -40,6 +44,10 @@ export default function OrgSettingsPage() {
         country_code: org.country_code ?? "",
         timezone: org.timezone,
         default_currency: org.default_currency,
+        description: org.description ?? "",
+        contact_email: org.contact_email ?? "",
+        contact_phone: org.contact_phone ?? "",
+        address: org.address ?? "",
       });
   }, [org, form]);
 
@@ -53,6 +61,10 @@ export default function OrgSettingsPage() {
         industry: v.industry || null,
         website: v.website || null,
         country_code: v.country_code || null,
+        description: v.description || null,
+        contact_email: v.contact_email || null,
+        contact_phone: v.contact_phone || null,
+        address: v.address || null,
       });
       toast.success("Organization updated");
     } catch (e) {
@@ -95,6 +107,20 @@ export default function OrgSettingsPage() {
               </div>
               <Field label="Time zone" htmlFor="timezone" error={errors.timezone?.message}>
                 <Input id="timezone" {...form.register("timezone")} />
+              </Field>
+              <Field label="About the business" htmlFor="description">
+                <Textarea id="description" rows={3} {...form.register("description")} />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Contact email" htmlFor="contact_email" error={errors.contact_email?.message}>
+                  <Input id="contact_email" type="email" {...form.register("contact_email")} />
+                </Field>
+                <Field label="Contact phone" htmlFor="contact_phone" error={errors.contact_phone?.message}>
+                  <Input id="contact_phone" type="tel" {...form.register("contact_phone")} />
+                </Field>
+              </div>
+              <Field label="Business address" htmlFor="address">
+                <Textarea id="address" rows={2} {...form.register("address")} />
               </Field>
             </fieldset>
             {editable ? (

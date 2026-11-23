@@ -6,11 +6,11 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, PageHeader } from "@/components/ui/misc";
 import { useAuth } from "@/features/auth/auth-provider";
+import { useBrands } from "@/features/brands/api";
 import { useMembers, useWorkspaces } from "@/features/organizations/api";
 import { useCurrentOrg } from "@/hooks/use-org";
 
 const ROADMAP = [
-  { phase: 2, title: "Brand profiles & assets", text: "Brand kit, products and services, asset library." },
   { phase: 3, title: "AI providers & usage", text: "Gemini, OpenAI, DeepSeek with BYOK and metered credits." },
   { phase: 4, title: "AI Creative Studio", text: "Copy, images, carousels and videos generated from your brief." },
   { phase: 5, title: "Meta campaigns", text: "Connect Pages, Instagram and ad accounts; approve and publish." },
@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const members = useMembers(orgId);
   const workspaces = useWorkspaces(orgId);
+  const brands = useBrands(orgId, false, can("brands.read"));
   if (!org) return null;
 
   const steps = [
@@ -31,6 +32,11 @@ export default function DashboardPage() {
       done: (members.data?.length ?? 0) > 1,
       label: "Invite your team",
       href: can("members.invite") ? `/app/${orgId}/members` : undefined,
+    },
+    {
+      done: (brands.data?.length ?? 0) > 0,
+      label: "Create your brand kit",
+      href: can("brands.read") ? `/app/${orgId}/brands` : undefined,
     },
     {
       done: (workspaces.data?.length ?? 0) > 1,

@@ -19,7 +19,7 @@
 
 | # | Decision | Phase 1 default taken | Needed by |
 |---|---|---|---|
-| D1 | Agency hierarchy: client = child tenant vs. workspace inside agency tenant | **Child tenant** (`tenant_type='client'`, `parent_tenant_id`) — strongest isolation, client hand-over possible. | Implemented; revisit only if objections. |
+| D1 | Agency hierarchy: client = child tenant vs. workspace inside agency tenant | **Child tenant** (`tenant_type='client'`, `parent_tenant_id`) — strongest isolation, client hand-over possible. | **Accepted** by the product owner (2026-11-23). |
 | D2 | Launch geography, currencies, tax (GST/VAT), payment gateway (Razorpay vs Stripe) | Model supports multiple currencies; no gateway chosen. | Phase 7 |
 | D3 | Initial image/video providers and quality targets | None hard-coded. | Phase 4 |
 | D4 | Creative/video allowances per subscription tier | — | Phase 4/7 |
@@ -27,8 +27,10 @@
 | D6 | Approval policy: always required vs configurable by action/budget/risk | Initial publish **always** needs explicit approval; later policies narrowly scoped. | Phase 5 |
 | D7 | Data residency, retention periods, privacy notice | — | Phase 6 |
 | D8 | Expected tenant count, concurrent generation jobs, storage volume, SLOs | Sized for low hundreds of tenants on one VPS. | Phase 9 |
-| D9 | Social login (Google/Facebook) at launch? | Email/password + TOTP MFA only; OAuth login slots reserved in `user_identities` design. | Phase 2 |
+| D9 | Social login (Google/Facebook) at launch? | Email/password + TOTP MFA only; OAuth login slots reserved in `user_identities` design. Still open after Phase 2. | Before launch |
 | D10 | Transactional email provider (SES, Postmark, SendGrid, SMTP) | Console adapter in dev; SMTP adapter ready. | Before first external user |
+| D11 | Production object storage: Cloudflare R2 vs AWS S3 vs self-hosted SeaweedFS | Code is provider-neutral (S3 API). Local Compose bundles SeaweedFS, because the MinIO community image could not be pulled from Docker Hub when Phase 2 was built. Recommend **R2** (no egress fees). | Before production |
+| D12 | Malware scanning for uploaded documents/videos | Not implemented; types are allowlisted and verified by content. | Before accepting third-party uploads at scale |
 
 ## 3. External dependencies
 

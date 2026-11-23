@@ -110,6 +110,32 @@ Agency tenants: `owner`/`admin` also hold `agency.clients.create` and `agency.cl
 
 ---
 
+## 2.3 Phase 2 schema — business & brand (implemented, migration `0002_business_brand`)
+
+```mermaid
+erDiagram
+  tenants ||--o{ brand_profiles : owns
+  brand_profiles ||--o{ brand_guidelines : "rules"
+  brand_profiles ||--o{ products : "sells"
+  brand_profiles ||--o{ brand_assets : "library"
+  brand_assets |o--o| brand_profiles : "logo"
+  brand_assets |o--o{ products : "image"
+```
+
+| Table | Key columns | Rules |
+|---|---|---|
+| `tenants` (altered) | `description`, `contact_email`, `contact_phone`, `address` | Organization profile fields. |
+| `brand_profiles` | `tenant_id`, `name`, `slug`, `tagline`, `description`, `industry`, `website`, `tone_of_voice`, `target_audience`, `value_propositions` jsonb[], `colors` jsonb[], `fonts` jsonb[], `social_links` jsonb{}, `logo_asset_id`, `is_default`, `status`, `deleted_at` | `UNIQUE(tenant_id, slug)` and one default per tenant (partial unique indexes over non-deleted rows); JSON shape checks; `UNIQUE(tenant_id, id)` as the target of composite FKs. |
+| `brand_guidelines` | `tenant_id`, `brand_id`, `category`, `title`, `content`, `sort_order` | Category check (`voice, visual, messaging, do, dont, legal, other`); FK `(tenant_id, brand_id)`. |
+| `products` | `tenant_id`, `brand_id`, `kind` (product/service), `name`, `sku`, `price` NUMERIC(20,6) (2 decimals in the API), `currency`, `price_unit`, `url`, `features` jsonb[], `image_asset_id`, `status`, `deleted_at` | `price ≥ 0`; currency required when priced; SKU unique per brand; FKs `(tenant_id, brand_id)` and `(tenant_id, image_asset_id)`. |
+| `brand_assets` | `tenant_id`, `brand_id`, `kind`, `status` (pending/ready/rejected), `storage_key`, `original_filename`, `declared_mime_type`, `mime_type` (detected), `size_bytes`, `checksum_sha256`, `width`, `height`, `title`, `alt_text`, `tags`, `rights_source`, `rights_notes`, `rights_expires_at`, `rejection_reason`, `upload_expires_at`, `completed_at`, `deleted_at` | `storage_key` unique and **must start with `tenants/{tenant_id}/`** (CHECK); kind and rights checks; FK `(tenant_id, brand_id)`. |
+
+All four tables have RLS ENABLE + FORCE with the standard `tenant_isolation` policy and `updated_at` triggers.
+Composite `(tenant_id, …)` foreign keys mean even the owner role, which bypasses RLS, cannot link a row to another
+tenant's brand or asset. `stale_pending_assets(n)` is a narrow `SECURITY DEFINER` function the cleanup job uses to
+find abandoned uploads across tenants; it returns only id, tenant and key, and the job then updates each row under
+that tenant's RLS context.
+
 ## 3. Target schema for later phases (designed, not yet migrated)
 
 Each group becomes its own Alembic revision in the phase noted. All tables follow §1 (tenant_id + RLS + composite

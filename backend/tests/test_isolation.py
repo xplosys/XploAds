@@ -7,7 +7,7 @@ import uuid
 import psycopg
 import pytest
 
-from tests.conftest import APP_DSN, create_org, register, unique_email
+from tests.conftest import APP_DSN, create_org, owner_query, register, unique_email
 
 
 async def _two_tenants(client):
@@ -122,3 +122,40 @@ async def test_system_roles_cannot_be_modified_by_app():
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             conn.execute("INSERT INTO permissions (id, code, module, description) "
                          "VALUES (gen_random_uuid(), 'x.y', 'x', 'x')")
+
+
+# --- Phase 2 brand tables ----------------------------------------------------------------------------
+
+
+async def make_brand(client, user, org, name="Acme Dental"):
+    from tests.test_brand import make_brand as mk
+
+    return await mk(client, user, org, name)
+
+
+async def test_rls_blocks_brand_rows_without_context(client):
+    u = await register(client)
+    org = await create_org(client, u)
+    await make_brand(client, u, org)
+    other = await create_org(client, u, "Other org")
+    with psycopg.connect(APP_DSN) as conn:
+        for table in ("brand_profiles", "products", "brand_guidelines", "brand_assets"):
+            assert conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0] == 0  # noqa: S608
+        conn.execute("SELECT set_config('app.tenant_id', %s, true)", (other["id"],))
+        assert conn.execute("SELECT count(*) FROM brand_profiles").fetchone()[0] == 0
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("INSERT INTO brand_profiles (id, tenant_id, name, slug) VALUES (%s, %s, 'x', 'x')",
+                         (uuid.uuid4(), org["id"]))
+        conn.rollback()
+        conn.execute("SELECT set_config('app.tenant_id', %s, true)", (org["id"],))
+        assert conn.execute("SELECT count(*) FROM brand_profiles").fetchone()[0] == 1
+
+
+async def test_composite_fk_blocks_cross_tenant_reference(client):
+    """Even the owner role (bypassing RLS) cannot attach a product to another tenant's brand."""
+    a, b = await register(client), await register(client)
+    org_a, org_b = await create_org(client, a), await create_org(client, b)
+    brand_b = await make_brand(client, b, org_b)
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        owner_query("INSERT INTO products (id, tenant_id, brand_id, name) VALUES (%s, %s, %s, 'x')",
+                    uuid.uuid4(), org_a["id"], brand_b["id"])

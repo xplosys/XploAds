@@ -19,3 +19,7 @@ structlog==26.1.0
 sentry-sdk==2.75.0
 # kombu's redis transport imports packaging without declaring it
 packaging==26.3
+# Object storage (S3 / R2 / MinIO), upload form parsing, image verification
+boto3==1.44.9
+python-multipart==0.0.32
+pillow==13.0.0

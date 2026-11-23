@@ -18,8 +18,11 @@ from app.core.database import dispose_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.core.rate_limit import close_redis, get_redis
+from app.modules.brand.api.routes import router as brand_router
 from app.modules.identity.api.routes import router as auth_router
 from app.modules.tenant.api.routes import router as tenant_router
+from app.shared.storage_routes import UPLOAD_PATH
+from app.shared.storage_routes import router as storage_router
 
 log = structlog.get_logger("xploads.http")
 
@@ -30,7 +33,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         request_id = incoming if 8 <= len(incoming) <= 64 and incoming.replace("-", "").isalnum() else uuid.uuid4().hex
         request.state.request_id = request_id
         limit = get_settings().max_request_body_bytes
-        if int(request.headers.get("content-length") or 0) > limit:
+        # Local-storage uploads carry files; their size is capped by the signed upload policy instead.
+        if request.url.path != UPLOAD_PATH and int(request.headers.get("content-length") or 0) > limit:
             from fastapi.responses import JSONResponse
 
             return JSONResponse(status_code=413, content={"error": {
@@ -86,6 +90,9 @@ def create_app() -> FastAPI:
     v1 = APIRouter(prefix="/api/v1")
     v1.include_router(auth_router)
     v1.include_router(tenant_router)
+    v1.include_router(brand_router)
+    if settings.storage_backend == "local":
+        v1.include_router(storage_router)
     app.include_router(v1)
 
     @app.get("/health/live", tags=["health"])

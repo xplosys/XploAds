@@ -54,6 +54,23 @@ Status column: ✅ implemented in Phase 1 · 🔜 designed, arrives with the mod
 | Upload validation, SSRF guard, webhook signatures, OAuth state | 🔜 | Phases 2 and 5 (designs in ARCHITECTURE §9–10). |
 | GDPR / DPDP: export, deletion, retention, consent | 🔜 | Phase 6 (decision D7). |
 
+## 4a. File uploads and object storage (Phase 2)
+
+- Browsers upload directly to storage using a short-lived signed form (S3 presigned POST). The policy pins the
+  exact key, the Content-Type and a `content-length-range`, so a client cannot choose a key, change the type or
+  exceed the kind's size limit. The API never streams file bytes in production.
+- Keys are generated server-side: `tenants/{tenant_id}/brands/{brand_id}/assets/{asset_id}/{sanitized-name}`. A
+  database CHECK enforces the tenant prefix; the storage-delete worker refuses keys outside the event's tenant.
+- On completion the server re-reads the object: size, magic-byte type on a per-kind allowlist (declared type and
+  extension are not trusted), full image decode with a decompression-bomb pixel cap, SHA-256. Anything else is
+  rejected and the object deleted. SVG is not accepted (it can carry script).
+- Downloads use signed URLs valid for 5 minutes with an explicit Content-Type and Content-Disposition; the local
+  backend also sends `nosniff` and a sandboxing CSP. The bucket is private; there are no public object URLs.
+- Abandoned uploads are rejected and removed hourly; pending uploads are capped per tenant (50) and upload starts
+  are rate limited (120/hour per user).
+- Not yet: malware scanning of documents and videos (add ClamAV or a provider scan before accepting customer
+  uploads at scale), video probing (FFmpeg arrives in Phase 4).
+
 ## 5. AI-specific controls (designed, Phases 3–4)
 
 Untrusted-content delimiting; tool allowlists per agent version; JSON-schema validation of outputs; authorization in

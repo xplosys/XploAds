@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.shared.notifications import Email, send_email
 from app.shared.outbox import OutboxEvent, handles
+from app.shared.storage import get_storage, tenant_prefix
 
 
 @handles("identity.email_verification_requested")
@@ -34,3 +35,13 @@ async def send_invitation_email(event: OutboxEvent) -> None:
         text=(f"{p['inviter_name']} invited you to join {p['organization_name']} as {p['role_name']}.\n\n"
               f"Accept the invitation:\n\n{p['link']}\n\nThis invitation expires in 7 days."),
     ))
+
+
+@handles("storage.object_delete_requested")
+async def delete_stored_object(event: OutboxEvent) -> None:
+    """Remove an asset's object after its row was deleted or rejected. Deleting a missing object is a no-op."""
+    key = event.payload["key"]
+    # Defence in depth: only ever delete inside the emitting tenant's prefix.
+    if not event.tenant_id or not key.startswith(tenant_prefix(event.tenant_id)):
+        raise ValueError("refusing to delete an object outside the event tenant's prefix")
+    await get_storage().delete(key)
