@@ -13,6 +13,9 @@ Read `docs/IMPLEMENTATION_STATUS.md` first, then `docs/architecture/ARCHITECTURE
 
 ## Rules that are easy to break
 
+- Test documents: one `Test Cases/XploAds_PhaseN_Test_Cases.xlsx` and one `Test Results/XploAds_PhaseN_Test_Results.xlsx`
+  per phase, at the repo root. Add both at the end of every phase.
+
 - Never connect the API/workers as the table owner; RLS must apply. New tenant-owned tables need `tenant_id`,
   `ENABLE` + `FORCE ROW LEVEL SECURITY`, a `tenant_isolation` policy, grants to `xploads_app`, and a test in
   `tests/test_isolation.py`.
